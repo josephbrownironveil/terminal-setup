@@ -2,68 +2,104 @@
 
 set -e
 
-echo "🚀 Installing Cyber Terminal..."
+echo "Installing headless Agent Core terminal..."
 
 sudo apt update && sudo apt install -y \
   zsh git curl wget unzip htop btop tmux figlet lolcat \
-  fastfetch bat eza ripgrep jq ncdu tree fzf
+  fastfetch bat eza ripgrep jq ncdu tree fzf \
+  ca-certificates gnupg lsb-release ufw
 
-# Zsh
-chsh -s $(which zsh)
+mkdir -p ~/agents ~/agent-control
 
-# Oh My Zsh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+  RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+fi
 
-# Powerlevel10k
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git \
-${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+if [ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ]; then
+  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git \
+  ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+fi
 
-# Plugins
-git clone https://github.com/zsh-users/zsh-autosuggestions \
-${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+if [ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]; then
+  git clone https://github.com/zsh-users/zsh-autosuggestions \
+  ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+fi
 
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
-${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+if [ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]; then
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
+  ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+fi
 
-# Zsh config
-cat >> ~/.zshrc << 'EOF'
+if [ -f "$HOME/.zshrc" ] && [ ! -f "$HOME/.zshrc.backup" ]; then
+  cp "$HOME/.zshrc" "$HOME/.zshrc.backup"
+fi
+
+cat > ~/.zshrc << 'ZSHRC'
+export ZSH="$HOME/.oh-my-zsh"
 
 ZSH_THEME="powerlevel10k/powerlevel10k"
-plugins=(git docker docker-compose npm node zsh-autosuggestions zsh-syntax-highlighting)
 
-# Cyber UI
-clear
-figlet "AGENT CORE" | lolcat
-fastfetch
+plugins=(
+  git
+  docker
+  docker-compose
+  npm
+  node
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+)
 
-alias ls="eza --icons"
-alias ll="eza -la --icons --git"
+source $ZSH/oh-my-zsh.sh
+
+export TERM=xterm-256color
+export COLORTERM=truecolor
+
+if command -v figlet >/dev/null 2>&1 && command -v lolcat >/dev/null 2>&1; then
+  figlet "AGENT CORE" | lolcat
+fi
+
+if command -v fastfetch >/dev/null 2>&1; then
+  fastfetch
+fi
+
+alias ls="eza"
+alias ll="eza -la --git"
+alias tree="tree -C"
 alias cat="batcat"
-alias bots="docker ps"
-alias logs="docker compose logs -f"
+alias cls="clear"
+
 alias sys="btop"
 alias space="ncdu"
-alias agents="cd ~/agents"
 alias ports="sudo ss -tulpn"
 alias firewall="sudo ufw status verbose"
+alias update="sudo apt update && sudo apt upgrade -y"
+
+alias bots="docker ps"
+alias botlogs="docker logs -f"
+alias agents="cd ~/agents"
+alias up="docker compose up -d"
+alias down="docker compose down"
+alias rebuild="docker compose up -d --build"
+alias logs="docker compose logs -f"
 
 alias core="~/agent-control/dashboard.sh"
 alias manage="~/agent-control/agent-manager.sh"
 alias newbot="~/agent-control/create-bot.sh"
 alias sec="~/agent-control/security-check.sh"
+ZSHRC
 
-export TERM=xterm-256color
-export COLORTERM=truecolor
+if [ -d "./scripts" ]; then
+  cp -r ./scripts/* ~/agent-control/
+  chmod +x ~/agent-control/*.sh
+fi
 
-EOF
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw --force enable
 
-# Create control folder
-mkdir -p ~/agent-control
+if command -v zsh >/dev/null 2>&1; then
+  sudo chsh -s "$(which zsh)" "$USER"
+fi
 
-# Copy scripts
-cp -r scripts/* ~/agent-control/
-
-chmod +x ~/agent-control/*.sh
-
-echo "✅ Install complete"
-echo "👉 Restart terminal or run: zsh"
+echo "Install complete. Run: exec zsh"
