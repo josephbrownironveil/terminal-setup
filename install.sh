@@ -38,7 +38,7 @@ fi
 cat > ~/.zshrc << 'ZSHRC'
 export ZSH="$HOME/.oh-my-zsh"
 
-ZSH_THEME="powerlevel10k/powerlevel10k"
+ZSH_THEME=""
 
 plugins=(
   git
@@ -54,19 +54,24 @@ source $ZSH/oh-my-zsh.sh
 
 export TERM=xterm-256color
 export COLORTERM=truecolor
+export BAT_THEME="GitHub"
+export CLICOLOR=1
+export LSCOLORS=ExFxBxDxCxegedabagacad
+export LS_COLORS="di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=37;41:sg=30;43:tw=30;42:ow=30;43"
+export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=242"
+export FZF_DEFAULT_OPTS="--color=fg:16,bg:15,hl:25,fg+:16,bg+:254,hl+:25,info:30,prompt:24,pointer:196,marker:196,spinner:24,header:24"
 
-if command -v figlet >/dev/null 2>&1 && command -v lolcat >/dev/null 2>&1; then
-  figlet "AGENT CORE" | lolcat
-fi
+PROMPT='%F{24}%n@%m%f %F{28}%~%f %# '
+RPROMPT='%F{240}%D{%H:%M}%f'
 
 if command -v fastfetch >/dev/null 2>&1; then
   fastfetch
 fi
 
-alias ls="eza"
-alias ll="eza -la --git"
+alias ls="eza --color=always --group-directories-first"
+alias ll="eza -la --git --color=always --group-directories-first"
 alias tree="tree -C"
-alias cat="batcat"
+alias cat="batcat --theme=GitHub"
 alias cls="clear"
 
 alias sys="btop"
